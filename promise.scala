@@ -29,13 +29,13 @@ object Promise {
             state match {
               case Some(_) => IO.pure(false)
               case None =>
-                set(a)
+                set(Some(a))
                   .flatTap { noConflict => waiters.complete(()).whenA(noConflict) }
                   .uncancelable
                   .flatMap { noConflict =>
-                    if (noConflict) ()
+                    if (noConflict) IO.pure(true)
                     else write(a)
-                  }.as(true)
+                  }
             }
           }
         def tryRead: IO[Option[A]] = state.get
