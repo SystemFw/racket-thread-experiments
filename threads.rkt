@@ -72,3 +72,21 @@
    (sleep 3)
    (semaphore-post sem)
    (println "Main thread finished")))
+
+;; Simply using the semaphore as an event behaves as semaphore-wait
+(define test-semaphore-simple-event-no-broadcast
+  (thunk
+   (define sem (make-semaphore))
+   (define event (semaphore-peek-evt sem))
+   (define (thread-logic name)
+     (thunk
+      (printf "Thread ~a started ~n" name)
+      (unless (sync/timeout 5 sem)
+        (printf "Thread ~a timed out ~n" name))
+      (printf "Thread ~a finished ~n" name)))
+   (println "Main thread started")
+   (thread (thread-logic "foo"))
+   (thread (thread-logic "bar"))
+   (sleep 3)
+   (semaphore-post sem)
+   (println "Main thread finished")))
