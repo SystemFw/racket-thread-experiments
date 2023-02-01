@@ -107,3 +107,44 @@
   (sleep 3)
   (semaphore-post sem)
   (println "Main thread finished"))
+
+
+
+(struct promise (semaphore event [value #:mutable]))
+(define (make-promise)
+  (let* ([sem (make-semaphore)]
+         [evt (semaphore-peek-evt sem)])
+    (promise sem evt 'promise-empty-marker)))
+
+(define (promise-read-2 promise)
+  (let ([value (promise-value promise)])
+    (case value
+      [(promise-empty-marker)
+       (begin
+         (sync (promise-event promise))
+         (promise-read-2 promise))]
+      [else value])))
+
+(define (promise-read-3 promise)
+  (let ([value (promise-value promise)])
+    (if (eq? value 'promise-empty-marker)
+        (begin
+          (sync promise-event promise)
+          (promise-read-3 promise))
+        value)))
+
+(define (promise-read-4 promise)
+  (let* ([value (promise-value promise)]
+         [empty? (eq? value 'promise-empty-marker)])
+    (cond [empty? (begin
+                     (sync (promise-event promise))
+                     (promise-read-4 promise))]
+          [else value])))
+
+(define (test-p promise)
+  (let* ([value (promise-value promise)])
+    (case value
+      [(promise-empty-marker) (println "yo")]
+      [ else (println value)])))
+
+
