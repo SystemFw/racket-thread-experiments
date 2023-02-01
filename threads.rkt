@@ -1,5 +1,5 @@
 #lang racket
-
+(require racket/unsafe/ops)
 ;; https://racket.discourse.group/t/what-would-it-take-to-write-an-independent-racket-interpreter/951
 
 ;; Designing promise:
@@ -111,40 +111,35 @@
 
 
 (struct promise (semaphore event [value #:mutable]))
+
 (define (make-promise)
   (let* ([sem (make-semaphore)]
          [evt (semaphore-peek-evt sem)])
     (promise sem evt 'promise-empty-marker)))
 
-(define (promise-read-2 promise)
-  (let ([value (promise-value promise)])
-    (case value
-      [(promise-empty-marker)
-       (begin
-         (sync (promise-event promise))
-         (promise-read-2 promise))]
-      [else value])))
-
-(define (promise-read-3 promise)
-  (let ([value (promise-value promise)])
-    (if (eq? value 'promise-empty-marker)
-        (begin
-          (sync promise-event promise)
-          (promise-read-3 promise))
-        value)))
-
-(define (promise-read-4 promise)
+(define (promise-read promise)
   (let* ([value (promise-value promise)]
          [empty? (eq? value 'promise-empty-marker)])
-    (cond [empty? (begin
-                     (sync (promise-event promise))
-                     (promise-read-4 promise))]
-          [else value])))
+    (cond
+      [empty? (begin
+                (sync (promise-event promise))
+                (promise-read promise))]
+      [else value])))
 
-(define (test-p promise)
-  (let* ([value (promise-value promise)])
-    (case value
-      [(promise-empty-marker) (println "yo")]
-      [ else (println value)])))
+(define (promise-write promise new-value)
+  (let* ([value (promise-value promise)]
+         [empty? (eq? value 'promise-empty-marker)])
+    (cond
+      [empty?
+       (let ([no-conflict
+             (parameterize-break #f
+               (let ([no-conflict (unsafe-struct*-cas! promise 2 value new-value)])
+                 (when no-conflict (semaphore-post (promise-semaphore promise)))
+                 no-conflict))])
+         (if no-conflict #t (promise-write promise)))]
+      [else #f])))
 
 
+         ;; [value-pos 2] ; positition of the value field in the struct
+         ;; [cas! (λ (new-value) (unsafe-struct*-cas! promise value-pos value new-value))]
+         ;; [write-and-wake! (λ () )]
