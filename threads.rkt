@@ -18,6 +18,16 @@
 ;; breaks are enabled by default
 ;; for events, there is a `sync/enable-break` form
 
+;; TODO how do I represent option here?
+;; - just #f --> Option[Boolean] is ambiguous
+;; - undefined
+;; - a gensym symbol
+;; - a struct with two fields
+;; - another hardcoded symbol
+;; (struct option (tag value))
+;; (define option-none (option 'none #f))
+;; (define (option-some v) (option 'some v))
+
 
 (define (basic-thread)
   (println "start")
@@ -28,13 +38,10 @@
   (println "spawner done"))
 
 (define (test-breaks-default)
-  (print "main thread")
-  (println (break-enabled))
+  (printf "main thread ~a ~n" (break-enabled))
   (thread
    (λ ()
-     (print "spawned thread")
-     (println (break-enabled)))))
-
+     (printf "spawned thread ~a ~n" (break-enabled)))))
 
 ;; deterministically prints done-3-2-1
 (define (test-spawn-order)
