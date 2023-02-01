@@ -19,90 +19,84 @@
 ;; for events, there is a `sync/enable-break` form
 
 
-(define basic-thread
-  (thunk
-   (println "start")
-   (thread (thunk
-            (sleep 2)
-            (println "thead done")))
-   (println "spawner done")))
+(define (basic-thread)
+  (println "start")
+  (thread
+   (λ ()
+     (sleep 2)
+     (println "thead done")))
+  (println "spawner done"))
 
-(define test-breaks-default
-  (thunk
-   (print "main thread")
-   (println (break-enabled))
-   (thread
-    (thunk
+(define (test-breaks-default)
+  (print "main thread")
+  (println (break-enabled))
+  (thread
+   (λ ()
      (print "spawned thread")
-     (println (break-enabled))))))
+     (println (break-enabled)))))
 
 
 ;; deterministically prints done-3-2-1
-(define test-spawn-order
-  (thunk
-   (thread (thunk (println 1)))
-   (thread (thunk (println 2)))
-   (thread (thunk (println 3)))
-   (println "done")))
+(define (test-spawn-order)
+   (thread (λ () (println 1)))
+   (thread (λ () (println 2)))
+   (thread (λ () (println 3)))
+   (println "done"))
 
 ;; deterministically prints 2-1-done-3
-(define test-spawn-order-2
-  (thunk
-   (thread (thunk (println 1)))
-   (thread (thunk (println 2)))
+(define (test-spawn-order-2)
+   (thread (λ () (println 1)))
+   (thread (λ () (println 2)))
    (sleep 1)
-   (thread (thunk (println 3)))
-   (println "done")))
+   (thread (λ () (println 3)))
+   (println "done"))
 
 
 ;; As predicted, the second spawned thread hangs
 ;; (they spawn in reverse order, so "foo" hangs)
-(define test-semaphore-no-broadcast
-  (thunk
-   (define sem (make-semaphore))
-   (define (thread-logic name)
-     (thunk
+(define (test-semaphore-no-broadcast)
+  (define sem (make-semaphore))
+  (define (thread-logic name)
+    (λ ()
       (printf "Thread ~a started ~n" name)
       (semaphore-wait sem)
       (printf "Thread ~a finished ~n" name)))
-   (println "Main thread started")
-   (thread (thread-logic "foo"))
-   (thread (thread-logic "bar"))
-   (sleep 3)
-   (semaphore-post sem)
-   (println "Main thread finished")))
+  (println "Main thread started")
+  (thread (thread-logic "foo"))
+  (thread (thread-logic "bar"))
+  (sleep 3)
+  (semaphore-post sem)
+  (println "Main thread finished"))
 
 ;; Simply using the semaphore as an event behaves as semaphore-wait
-(define test-semaphore-simple-event-no-broadcast
-  (thunk
-   (define sem (make-semaphore))
-   (define (thread-logic name)
-     (thunk
+(define (test-semaphore-simple-event-no-broadcast)
+  (define sem (make-semaphore))
+  (define (thread-logic name)
+    (λ ()
       (printf "Thread ~a started ~n" name)
       (unless (sync/timeout 5 sem)
         (printf "Thread ~a timed out ~n" name))
       (printf "Thread ~a finished ~n" name)))
-   (println "Main thread started")
-   (thread (thread-logic "foo"))
-   (thread (thread-logic "bar"))
-   (sleep 3)
-   (semaphore-post sem)
-   (println "Main thread finished")))
+  (println "Main thread started")
+  (thread (thread-logic "foo"))
+  (thread (thread-logic "bar"))
+  (sleep 3)
+  (semaphore-post sem)
+  (println "Main thread finished"))
 
 ;; peek works! Broadcasts completion
-(define test-semaphore-peek-event-broadcast
-  (thunk
-   (define sem (make-semaphore))
-   (define event (semaphore-peek-evt sem))
-   (define (thread-logic name)
-     (thunk
+(define (test-semaphore-peek-event-broadcast)
+  (define sem (make-semaphore))
+  (define event (semaphore-peek-evt sem))
+  (define (thread-logic name)
+    (λ ()
       (printf "Thread ~a started ~n" name)
       (unless (sync/timeout 5 event)
         (printf "Thread ~a timed out ~n" name))
       (printf "Thread ~a finished ~n" name)))
-   (println "Main thread started")
-   (thread (thread-logic "foo"))
-   (thread (thread-logic "bar"))
-   (sleep 3)
-   (semaphore-post sem)
-   (println "Main thread finished")))
+  (println "Main thread started")
+  (thread (thread-logic "foo"))
+  (thread (thread-logic "bar"))
+  (sleep 3)
+  (semaphore-post sem)
+  (println "Main thread finished"))
