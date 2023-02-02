@@ -136,7 +136,7 @@
                (let ([no-conflict (unsafe-struct*-cas! promise 2 value new-value)])
                  (when no-conflict (semaphore-post (promise-semaphore promise)))
                  no-conflict))])
-         (if no-conflict #t (promise-write promise new-value)))] ; I had forgotten to pass new-value, write a test to stress the resulting bug
+         (if no-conflict #t (promise-write promise new-value)))]
       [else #f])))
 
 
@@ -157,3 +157,12 @@
     (println "main thread finished")))
 
 ;; add a test to stress read-write races
+(define (test-contention)
+  (let ([p (make-promise)])
+    (thread (λ ()
+              (sleep 1)
+              (printf "reader finished with ~a ~n" (promise-read p))))
+    (thread (λ ()
+              (sleep 1)
+              (promise-write p 7)
+              (println "writer finished")))))
