@@ -12,20 +12,22 @@
   (let* ([value (promise-value promise)]
          [empty? (eq? value 'promise-empty-marker)])
     (cond
-      [empty? (begin
-                (sync (promise-event promise))
-                (promise-read promise))]
+      [empty?
+       (sync (promise-event promise))
+       (promise-read promise)]
       [else value])))
 
 (define (promise-write promise new-value)
   (let* ([value (promise-value promise)]
-         [empty? (eq? value 'promise-empty-marker)])
+         [empty? (eq? value 'promise-empty-marker)]
+         [cas! (λ () (unsafe-struct*-cas! promise 2 value new-value))]
+         [awake-readers (λ () (semaphore-post (promise-semaphore promise)))])
     (cond
       [empty?
        (let ([no-conflict
              (parameterize-break #f
-               (let ([no-conflict (unsafe-struct*-cas! promise 2 value new-value)])
-                 (when no-conflict (semaphore-post (promise-semaphore promise)))
+               (let ([no-conflict (cas!)])
+                 (when no-conflict (awake-readers))
                  no-conflict))])
          (if no-conflict #t (promise-write promise new-value)))]
       [else #f])))
