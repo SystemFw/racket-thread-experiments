@@ -122,9 +122,7 @@
          [empty? (eq? value 'promise-empty-marker)])
     (cond
       [empty? (begin
-                (unless (sync/timeout 5 (promise-event promise))
-                  (printf "Timeout! ~n"))
-               #;(sync (promise-event promise))
+                (sync (promise-event promise))
                 (promise-read promise))]
       [else value])))
 
@@ -138,7 +136,7 @@
                (let ([no-conflict (unsafe-struct*-cas! promise 2 value new-value)])
                  (when no-conflict (semaphore-post (promise-semaphore promise)))
                  no-conflict))])
-         (if no-conflict #t (promise-write promise)))]
+         (if no-conflict #t (promise-write promise new-value)))] ; I had forgotten to pass new-value, write a test to stress the resulting bug
       [else #f])))
 
 
@@ -158,3 +156,4 @@
     (thread (λ () (wait-on-promise "baz" p)))
     (println "main thread finished")))
 
+;; add a test to stress read-write races
