@@ -3,16 +3,21 @@
 
 (struct promise (semaphore event [value #:mutable]))
 
+(define promise-empty-value 'promise-empty-value-marker)
+
+(define (promise-empty-value? promise-value)
+  (eq? promise-value promise-empty-value))
+
 (define (make-promise)
   (let* ([sem (make-semaphore)]
          [evt (semaphore-peek-evt sem)])
-    (promise sem evt 'promise-empty-marker)))
+    (promise sem evt promise-empty-value)))
 
 (define (promise-try-read promise) (promise-value promise))
 
 (define (promise-read promise)
   (let* ([value (promise-value promise)]
-         [empty? (eq? value 'promise-empty-marker)])
+         [empty? (promise-empty-value? value)])
     (cond
       [empty?
        (sync (promise-event promise))
@@ -21,7 +26,7 @@
 
 (define (promise-write promise new-value)
   (let* ([value (promise-value promise)]
-         [empty? (eq? value 'promise-empty-marker)]
+         [empty? (promise-empty-value? value)]
          [cas! (λ () (unsafe-struct*-cas! promise 2 value new-value))]
          [awake-readers (λ () (semaphore-post (promise-semaphore promise)))])
     (cond
