@@ -1,7 +1,20 @@
-#lang racket
-(require racket/unsafe/ops)
+#!r6rs
+(import (rnrs base (6))
+        (rnrs records syntactic)
+        (only (racket base)
+              make-semaphore
+              semaphore-peek-evt
+              sync/enable-break
+              semaphore-post
+              parameterize-break
+              thread
+              printf
+              sleep)
+        (only (racket unsafe ops) unsafe-struct*-cas!))
 
-(struct promise (semaphore event [value #:mutable]))
+(define-record-type
+  (promise new-promise promise?)
+  (fields semaphore event (mutable value)))
 
 (define promise-empty-value 'promise-empty-value-marker)
 
@@ -11,10 +24,11 @@
 (define (make-promise)
   (let* ([sem (make-semaphore)]
          [evt (semaphore-peek-evt sem)])
-    (promise sem evt promise-empty-value)))
+    (new-promise sem evt promise-empty-value)))
 
 (define (promise-try-read promise) (promise-value promise))
 
+;; Unison.tryEval has to include a break-parameterize #f I think
 (define (promise-read promise)
   (let loop ()
     (let* ([value (promise-value promise)]
