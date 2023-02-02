@@ -140,6 +140,16 @@
       [else #f])))
 
 
-         ;; [value-pos 2] ; positition of the value field in the struct
-         ;; [cas! (λ (new-value) (unsafe-struct*-cas! promise value-pos value new-value))]
-         ;; [write-and-wake! (λ () )]
+(define (wait-on-promise name promise)
+  (printf "Thread ~a started ~n" name)
+  (let ([res (promise-read promise)])
+        (printf "Thread ~a finished with result ~a ~n" name res)))
+
+(define (test-promise)
+  (let ([p (make-promise)])
+    (println "main thread started")
+    (thread (λ () (wait-on-promise "foo" p)))
+    (thread (λ () (wait-on-promise "bar" p)))
+    (sleep 3)
+    (println "main thread finish")))
+
