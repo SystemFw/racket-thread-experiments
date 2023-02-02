@@ -1,12 +1,7 @@
 //> using lib "org.typelevel::cats-effect::3.4.5"
 
-
 import cats.effect._
 import cats.syntax.all._
-
-object Ex extends IOApp.Simple {
-  def run = IO.println("hello")
-}
 
 trait Promise[A] {
   def read: IO[A]
