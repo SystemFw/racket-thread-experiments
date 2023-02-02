@@ -21,7 +21,7 @@
            [full? (not (promise-empty-value? value))])
       (cond
         [full? value]
-        [else (sync (promise-event promise)) (loop)]))))
+        [else (sync/enable-break (promise-event promise)) (loop)]))))
 
 (define (promise-write promise new-value)
   (let loop ()
