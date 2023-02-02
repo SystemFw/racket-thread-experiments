@@ -151,7 +151,10 @@
   (let ([p (make-promise)])
     (println "main thread started")
     (thread (λ () (wait-on-promise "foo" p)))
-    #; (thread (λ () (wait-on-promise "bar" p)))
+    (thread (λ () (wait-on-promise "bar" p)))
     (sleep 3)
+    (promise-write p 42)
+    (promise-write p 73)
+    (thread (λ () (wait-on-promise "baz" p)))
     (println "main thread finished")))
 
