@@ -140,20 +140,21 @@
       [else #f])))
 
 
-(define (wait-on-promise name promise)
-  (printf "Thread ~a started ~n" name)
-  (let ([res (promise-read promise)])
-        (printf "Thread ~a finished with result ~a ~n" name res)))
+(define (spawn-promise-reader name p)
+  (thread
+   (λ ()
+     (printf "Thread ~a started ~n" name)
+     (printf "Thread ~a finished with result ~a ~n" name (promise-read p)))))
 
 (define (test-promise)
   (let ([p (make-promise)])
     (println "main thread started")
-    (thread (λ () (wait-on-promise "foo" p)))
-    (thread (λ () (wait-on-promise "bar" p)))
+    (spawn-promise-reader "foo" p)
+    (spawn-promise-reader "bar" p)
     (sleep 3)
     (promise-write p 42)
-    (promise-write p 73)
-    (thread (λ () (wait-on-promise "baz" p)))
+    ;(promise-write p 73)
+    (spawn-promise-reader "baz" p)
     (println "main thread finished")))
 
 ;; add a test to stress read-write races
