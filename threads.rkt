@@ -122,7 +122,9 @@
          [empty? (eq? value 'promise-empty-marker)])
     (cond
       [empty? (begin
-                (sync (promise-event promise))
+                (unless (sync/timeout 5 (promise-event promise))
+                  (printf "Timeout! ~n"))
+               #;(sync (promise-event promise))
                 (promise-read promise))]
       [else value])))
 
@@ -149,7 +151,7 @@
   (let ([p (make-promise)])
     (println "main thread started")
     (thread (λ () (wait-on-promise "foo" p)))
-    (thread (λ () (wait-on-promise "bar" p)))
+    #; (thread (λ () (wait-on-promise "bar" p)))
     (sleep 3)
-    (println "main thread finish")))
+    (println "main thread finished")))
 
