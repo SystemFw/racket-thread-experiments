@@ -16,33 +16,28 @@
 (define (promise-try-read promise) (promise-value promise))
 
 (define (promise-read promise)
-  (let* ([value (promise-value promise)]
-         [empty? (promise-empty-value? value)])
-    (cond
-      [empty?
-       (sync (promise-event promise))
-       (promise-read promise)]
-      [else value])))
+  (let loop ()
+    (let* ([value (promise-value promise)]
+           [full? (not (promise-empty-value? value))])
+      (cond
+        [full? value]
+        [else (sync (promise-event promise)) (loop)]))))
 
 (define (promise-write promise new-value)
-  (let* ([value (promise-value promise)]
-         [empty? (promise-empty-value? value)]
-         [cas! (λ () (unsafe-struct*-cas! promise 2 value new-value))]
-         [awake-readers (λ () (semaphore-post (promise-semaphore promise)))])
-    (cond
-      [empty?
-       (let ([no-conflict
-             (parameterize-break #f
-               (let ([no-conflict (cas!)])
-                 (when no-conflict (awake-readers))
-                 no-conflict))])
-         (if no-conflict #t (promise-write promise new-value)))]
-      [else #f])))
-
+  (let loop ()
+    (let* ([value (promise-value promise)]
+           [full? (not (promise-empty-value? value))]
+           [cas! (lambda () (unsafe-struct*-cas! promise 2 value new-value))]
+           [awake-readers (lambda () (semaphore-post (promise-semaphore promise)))])
+      (cond
+        [full? #f]
+        [else
+         (let ([ok (parameterize-break #f (if (cas!) (awake-readers) #f))])
+           (if ok #t (loop)))]))))
 
 (define (spawn-promise-reader name p)
   (thread
-   (λ ()
+   (lambda ()
      (printf "Thread ~a started ~n" name)
      (printf "Thread ~a finished with result ~a ~n" name (promise-read p)))))
 
