@@ -8,6 +8,8 @@
          [evt (semaphore-peek-evt sem)])
     (promise sem evt 'promise-empty-marker)))
 
+(define (promise-try-read promise) (promise-value promise))
+
 (define (promise-read promise)
   (let* ([value (promise-value promise)]
          [empty? (eq? value 'promise-empty-marker)])
@@ -41,11 +43,15 @@
 
 (define (test-promise)
   (let ([p (make-promise)])
-    (println "main thread started")
+    (printf "Main thread started ~n")
+    (printf "Current promise is ~a ~n" (promise-try-read p))
     (spawn-promise-reader "foo" p)
     (spawn-promise-reader "bar" p)
     (sleep 3)
     (promise-write p 42)
+    (sleep 1)
     (promise-write p 73)
     (spawn-promise-reader "baz" p)
-    (println "main thread finished")))
+    (printf "Current promise is ~a ~n" (promise-try-read p))
+    (printf "Main thread finished ~n")))
+
