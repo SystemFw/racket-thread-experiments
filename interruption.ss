@@ -8,12 +8,12 @@
               sleep
               displayln
               with-handlers
-              exn:break
+              exn:break?
               printf))
 
 
 (define (sleep-5)
-  (with-handlers ([exn:break (lambda (x) (printf "Interrupted by ~a" x))])
+  (with-handlers ([exn:break? (lambda (x) (printf "Interrupted by ~a ~n" x))])
     (displayln "start")
      (sleep 5)
      (displayln "end")))
