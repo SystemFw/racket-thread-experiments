@@ -4,6 +4,8 @@
               thread
               parameterize-break
               break-thread
+              break-enabled
+              thread-wait
               kill-thread
               sleep
               displayln
@@ -14,14 +16,38 @@
 (define (timeout n thunk)
   (let ([t (thread thunk)])
     (sleep n)
-    (break-thread t)))
+    (break-thread t)
+    (thread-wait t)))
 
+(define (sleep/enable-break n)
+  (break-enabled #t)
+  (sleep n)
+  (break-enabled #f))
 
-(define (interruptible-sleep)
+(define default-timeout 3)
+(define default-sleep 5)
+
+(define (sleep-thread sleeping-f)
   (with-handlers ([exn:break? (lambda (x) (printf "Interrupted by ~a ~n" x))])
     (displayln "start")
-     (sleep 5)
+     (sleeping-f default-sleep)
      (displayln "end")))
 
-(define (interruptible-sleep-test) (timeout 3 interruptible-sleep))
+(define racket-sleep (lambda (n) (sleep n)))
+
+(define (interruptible-sleep-test)
+  (timeout default-timeout (lambda ()
+               (sleep-thread sleep))))
+
+(define (uninterruptible-sleep-inner-mask-test)
+  (timeout default-timeout (lambda ()
+               (parameterize-break #f
+                 (sleep-thread sleep)))))
+
+(define (interruptible-sleep-inner-mask-test)
+  (timeout default-timeout (lambda ()
+               (parameterize-break #f
+                 (sleep-thread sleep/enable-break)))))
+
+
 
