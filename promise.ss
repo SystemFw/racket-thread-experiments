@@ -16,35 +16,33 @@
   (promise new-promise promise?)
   (fields semaphore event (mutable value)))
 
-(define promise-empty-value 'promise-empty-value-marker)
-
-(define (promise-empty-value? promise-value)
-  (eq? promise-value promise-empty-value))
+(define none '(0))
+(define (some a) `(1 . ,a))
+(define (some? option) (eq? 1 (car option)))
+(define (get option) (cdr option))
 
 (define (make-promise)
   (let* ([sem (make-semaphore)]
-         [evt (semaphore-peek-evt sem)])
-    (new-promise sem evt promise-empty-value)))
+         [evt (semaphore-peek-evt sem)]
+         [value none])
+    (new-promise sem evt value)))
 
 (define (promise-try-read promise) (promise-value promise))
 
-;; Unison.tryEval has to include a break-parameterize #f I think
 (define (promise-read promise)
   (let loop ()
-    (let* ([value (promise-value promise)]
-           [full? (not (promise-empty-value? value))])
+    (let* ([value (promise-value promise)])
       (cond
-        [full? value]
+        [(some? value) (get value)]
         [else (sync/enable-break (promise-event promise)) (loop)]))))
 
 (define (promise-write promise new-value)
   (let loop ()
     (let* ([value (promise-value promise)]
-           [full? (not (promise-empty-value? value))]
-           [cas! (lambda () (unsafe-struct*-cas! promise 2 value new-value))]
+           [cas! (lambda () (unsafe-struct*-cas! promise 2 value (some new-value)))]
            [awake-readers (lambda () (semaphore-post (promise-semaphore promise)))])
       (cond
-        [full? #f]
+        [(some? value) #f]
         [else
          (let ([ok (parameterize-break #f (if (cas!) (awake-readers) #f))])
            (if ok #t (loop)))]))))
