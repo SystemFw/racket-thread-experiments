@@ -12,13 +12,13 @@
               printf))
 
 
-(define (sleep-5)
+(define (interrupt-sleep)
   (with-handlers ([exn:break? (lambda (x) (printf "Interrupted by ~a ~n" x))])
     (displayln "start")
      (sleep 5)
      (displayln "end")))
 
-(define (interrupt-sleep)
-  (let ([t (thread sleep-5)])
+(define (interrupt-sleep-test)
+  (let ([t (thread interrupt-sleep)])
     (sleep 3)
     (break-thread t)))
