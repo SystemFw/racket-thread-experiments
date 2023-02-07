@@ -17,10 +17,11 @@
     (break-thread t)))
 
 
-(define (interrupt-sleep)
+(define (interruptible-sleep)
   (with-handlers ([exn:break? (lambda (x) (printf "Interrupted by ~a ~n" x))])
     (displayln "start")
      (sleep 5)
      (displayln "end")))
 
-(define (interrupt-sleep-test) (timeout 3 interrupt-sleep))
+(define (interruptible-sleep-test) (timeout 3 interruptible-sleep))
+
