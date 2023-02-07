@@ -8,10 +8,14 @@
               break-thread
               kill-thread
               sleep
-              displayln))
+              displayln
+              with-handlers
+              exn:break
+              printf))
 
 
 (define (foo)
-  (displayln "start")
-  (sleep 1.5)
-  (displayln "end"))
+  (with-handlers ([exn:break (lambda (x) (printf "Interrupted by ~a" x))])
+    (displayln "start")
+     (sleep 5)
+     (displayln "end")))
