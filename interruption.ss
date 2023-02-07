@@ -11,6 +11,11 @@
               exn:break?
               printf))
 
+(define (timeout n thunk)
+  (let ([t (thread thunk)])
+    (sleep n)
+    (break-thread t)))
+
 
 (define (interrupt-sleep)
   (with-handlers ([exn:break? (lambda (x) (printf "Interrupted by ~a ~n" x))])
@@ -18,7 +23,4 @@
      (sleep 5)
      (displayln "end")))
 
-(define (interrupt-sleep-test)
-  (let ([t (thread interrupt-sleep)])
-    (sleep 3)
-    (break-thread t)))
+(define (interrupt-sleep-test) (timeout 3 interrupt-sleep))
