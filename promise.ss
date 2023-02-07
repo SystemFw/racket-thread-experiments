@@ -49,6 +49,8 @@
          (let ([ok (parameterize-break #f (if (cas!) (awake-readers) #f))])
            (if ok #t (loop)))]))))
 
+;;; tests
+
 (define (spawn-promise-reader name p)
   (thread
    (lambda ()
