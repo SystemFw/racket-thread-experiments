@@ -16,8 +16,8 @@
   (promise new-promise promise?)
   (fields semaphore event (mutable value)))
 
-(define none '(0))
-(define (some a) `(1 . ,a))
+(define none (cons 0 `()))
+(define (some a) (cons 1 `(,a)))
 (define (some? option) (eq? 1 (car option)))
 (define (get option) (cdr option))
 
